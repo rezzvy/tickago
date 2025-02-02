@@ -9,18 +9,32 @@ class TickAgo {
   static MILLISECONDS_IN_HOUR = 1000 * 60 * 60;
   static MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
 
-  static parseDate(input) {
+  static parseDate(input, format) {
+    if (input instanceof Date) return input;
+
+    if (format && typeof input === "string") {
+      const parts = input.match(/\d+/g);
+      if (!parts) throw new Error("Invalid date format");
+
+      const map = {};
+      format.split(/[-/.\s]/).forEach((key, i) => (map[key] = +parts[i]));
+
+      return new Date(map["YYYY"], (map["MM"] || 1) - 1, map["DD"] || 1);
+    }
+
     const parsedDate = new Date(input);
     if (+parsedDate) return parsedDate;
 
     throw new Error("Invalid date format");
   }
 
-  static latestMoment(timestamp, lang = {}) {
+  static moment(timestamp, options = {}) {
     const now = new Date();
-    const past = this.parseDate(timestamp);
+    const past = this.parseDate(timestamp, options.format);
     const elapsed = Math.floor((now - past) / 1000);
-    const { sec = "sec ago", minutes = "minutes ago", hours = "hours ago", days = "days ago", months = "months ago", years = "years ago" } = lang;
+
+    const labels = options.labels ?? {};
+    const { sec = "sec ago", minutes = "minutes ago", hours = "hours ago", days = "days ago", months = "months ago", years = "years ago" } = labels;
 
     const timeUnits = [
       { limit: this.SECOND_IN_SECONDS, value: elapsed, unit: sec },
@@ -37,9 +51,9 @@ class TickAgo {
     return `${Math.floor(elapsed / this.YEAR_IN_SECONDS)} ${years}`;
   }
 
-  static compare(dateOne, dateTwo) {
-    const startDate = this.parseDate(dateOne);
-    const endDate = this.parseDate(dateTwo);
+  static compare(dateOne, dateTwo, format) {
+    const startDate = this.parseDate(dateOne, format);
+    const endDate = this.parseDate(dateTwo, format);
 
     let years = endDate.getFullYear() - startDate.getFullYear();
     let months = endDate.getMonth() - startDate.getMonth();

@@ -10,12 +10,27 @@ class TickAgo {
   static MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
 
   /**
-   * Parses an input string or timestamp into a Date object.
-   * @param {string|number} input - The date input to parse.
+   * Parses an input into a Date object.
+   * If the input is already a Date object, it is returned as it is.
+   *
+   * @param {string|number|Date} input - The date input to parse.
+   * @param {string} [format] - The optional format for parsing date strings (e.g., "YYYY-MM-DD").
    * @returns {Date} The parsed Date object.
    * @throws {Error} If the input cannot be parsed into a valid date.
    */
-  static parseDate(input) {
+  static parseDate(input, format) {
+    if (input instanceof Date) return input;
+
+    if (format && typeof input === "string") {
+      const parts = input.match(/\d+/g);
+      if (!parts) throw new Error("Invalid date format");
+
+      const map = {};
+      format.split(/[-/.\s]/).forEach((key, i) => (map[key] = +parts[i]));
+
+      return new Date(map["YYYY"], (map["MM"] || 1) - 1, map["DD"] || 1);
+    }
+
     const parsedDate = new Date(input);
     if (+parsedDate) return parsedDate;
 
@@ -34,11 +49,13 @@ class TickAgo {
    * @param {string} [lang.years="years ago"] - The label for years.
    * @returns {string} The time ago in a human-readable format.
    */
-  static latestMoment(timestamp, lang = {}) {
+  static moment(timestamp, options = {}) {
     const now = new Date();
-    const past = this.parseDate(timestamp);
+    const past = this.parseDate(timestamp, options.format);
     const elapsed = Math.floor((now - past) / 1000);
-    const { sec = "sec ago", minutes = "minutes ago", hours = "hours ago", days = "days ago", months = "months ago", years = "years ago" } = lang;
+
+    const labels = options.labels ?? {};
+    const { sec = "sec ago", minutes = "minutes ago", hours = "hours ago", days = "days ago", months = "months ago", years = "years ago" } = labels;
 
     const timeUnits = [
       { limit: this.SECOND_IN_SECONDS, value: elapsed, unit: sec },
@@ -61,9 +78,9 @@ class TickAgo {
    * @param {string|number} dateTwo - The second date to compare.
    * @returns {Object} An object containing the time difference: years, months, days, hours, minutes, seconds, and elapsedTime in milliseconds.
    */
-  static compare(dateOne, dateTwo) {
-    const startDate = this.parseDate(dateOne);
-    const endDate = this.parseDate(dateTwo);
+  static compare(dateOne, dateTwo, format) {
+    const startDate = this.parseDate(dateOne, format);
+    const endDate = this.parseDate(dateTwo, format);
 
     let years = endDate.getFullYear() - startDate.getFullYear();
     let months = endDate.getMonth() - startDate.getMonth();
