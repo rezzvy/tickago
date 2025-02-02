@@ -88,3 +88,9 @@ class TickAgo {
     return { years, months, days, hours, minutes, seconds, elapsedTime };
   }
 }
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = TickAgo; // Node.js
+} else {
+  window.TickAgo = TickAgo; // Browser
+}
