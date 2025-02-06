@@ -75,12 +75,20 @@ class TickAgo {
     const minutes = Math.floor((elapsedTime % this.MILLISECONDS_IN_HOUR) / this.MILLISECONDS_IN_MINUTE);
     const seconds = Math.floor((elapsedTime % this.MILLISECONDS_IN_MINUTE) / this.MILLISECONDS_IN_SECOND);
 
-    return { years, months, days, hours, minutes, seconds, elapsedTime };
+    const raw = {
+      seconds: Math.floor(elapsedTime / this.MILLISECONDS_IN_SECOND),
+      minutes: Math.floor(elapsedTime / this.MILLISECONDS_IN_MINUTE),
+      hours: Math.floor(elapsedTime / this.MILLISECONDS_IN_HOUR),
+      days: Math.floor(elapsedTime / this.MILLISECONDS_IN_DAY),
+      months: years * 12 + months,
+    };
+
+    return { years, months, days, hours, minutes, seconds, elapsedTime, raw };
   }
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = TickAgo;
+  module.exports = TickAgo; 
 } else {
-  window.TickAgo = TickAgo;
+  window.TickAgo = TickAgo; 
 }
