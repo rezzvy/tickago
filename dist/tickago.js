@@ -59,10 +59,15 @@ class TickAgo {
     let months = endDate.getMonth() - startDate.getMonth();
     let days = endDate.getDate() - startDate.getDate();
 
+    const elapsedTime = endDate - startDate;
+    const totalDays = Math.floor(elapsedTime / this.MILLISECONDS_IN_DAY);
+
     if (days < 0) {
       months--;
       const daysInPreviousMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 0).getDate();
       days += daysInPreviousMonth;
+
+      if (days < 0) days = 0;
     }
 
     if (months < 0) {
@@ -70,16 +75,19 @@ class TickAgo {
       months += 12;
     }
 
-    const elapsedTime = endDate - startDate;
     const hours = Math.floor((elapsedTime % this.MILLISECONDS_IN_DAY) / this.MILLISECONDS_IN_HOUR);
     const minutes = Math.floor((elapsedTime % this.MILLISECONDS_IN_HOUR) / this.MILLISECONDS_IN_MINUTE);
     const seconds = Math.floor((elapsedTime % this.MILLISECONDS_IN_MINUTE) / this.MILLISECONDS_IN_SECOND);
+
+    if (totalDays < days) {
+      days = totalDays;
+    }
 
     const raw = {
       seconds: Math.floor(elapsedTime / this.MILLISECONDS_IN_SECOND),
       minutes: Math.floor(elapsedTime / this.MILLISECONDS_IN_MINUTE),
       hours: Math.floor(elapsedTime / this.MILLISECONDS_IN_HOUR),
-      days: Math.floor(elapsedTime / this.MILLISECONDS_IN_DAY),
+      days: totalDays,
       months: years * 12 + months,
     };
 
@@ -88,7 +96,7 @@ class TickAgo {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = TickAgo; 
+  module.exports = TickAgo;
 } else {
-  window.TickAgo = TickAgo; 
+  window.TickAgo = TickAgo;
 }
