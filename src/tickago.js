@@ -1,22 +1,40 @@
 class TickAgo {
-  static SECOND_IN_SECONDS = 60;
+  /** Time constants in seconds and milliseconds */
+  static SECOND_IN_SECONDS = 1;
+  static MINUTE_IN_SECONDS = 60;
   static HOUR_IN_SECONDS = 3600;
   static DAY_IN_SECONDS = 86400;
-  static MONTH_IN_SECONDS = 2592000;
-  static YEAR_IN_SECONDS = 31536000;
   static MILLISECONDS_IN_SECOND = 1000;
   static MILLISECONDS_IN_MINUTE = 1000 * 60;
   static MILLISECONDS_IN_HOUR = 1000 * 60 * 60;
   static MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
 
   /**
-   * Parses an input into a Date object.
-   * If the input is already a Date object, it is returned as it is.
-   *
-   * @param {string|number|Date} input - The date input to parse.
-   * @param {string} [format] - The optional format for parsing date strings (e.g., "YYYY-MM-DD").
-   * @returns {Date} The parsed Date object.
-   * @throws {Error} If the input cannot be parsed into a valid date.
+   * Get seconds in a month (based on the given date)
+   * @param {Date} [date=new Date()] - The date to calculate from
+   * @returns {number} - Seconds in the given month
+   */
+  static MONTH_IN_SECONDS(date = new Date()) {
+    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    return daysInMonth * this.DAY_IN_SECONDS;
+  }
+
+  /**
+   * Get seconds in a year (adjusts for leap years)
+   * @param {Date} [date=new Date()] - The date to calculate from
+   * @returns {number} - Seconds in the given year
+   */
+  static YEAR_IN_SECONDS(date = new Date()) {
+    const isLeapYear = (date.getFullYear() % 4 === 0 && date.getFullYear() % 100 !== 0) || date.getFullYear() % 400 === 0;
+    return (isLeapYear ? 366 : 365) * this.DAY_IN_SECONDS;
+  }
+
+  /**
+   * Parse various date formats into a Date object
+   * @param {string|Date} input - The date input
+   * @param {string} [format] - The expected date format
+   * @returns {Date} - Parsed date object
+   * @throws {Error} - If the date format is invalid
    */
   static parseDate(input, format) {
     if (input instanceof Date) return input;
@@ -28,26 +46,23 @@ class TickAgo {
       const map = {};
       format.split(/[-/.\s]/).forEach((key, i) => (map[key] = +parts[i]));
 
-      return new Date(map["YYYY"], (map["MM"] || 1) - 1, map["DD"] || 1);
+      const parsedDate = new Date(map["YYYY"], (map["MM"] || 1) - 1, map["DD"] || 1);
+      if (!isNaN(parsedDate.getTime())) return parsedDate;
     }
 
     const parsedDate = new Date(input);
-    if (+parsedDate) return parsedDate;
+    if (!isNaN(parsedDate.getTime())) return parsedDate;
 
     throw new Error("Invalid date format");
   }
 
   /**
-   * Returns the most recent moment from a given timestamp relative to the current time.
-   * @param {string|number} timestamp - The timestamp to compare against the current time.
-   * @param {Object} [lang={}] - Optional language settings for time units.
-   * @param {string} [lang.sec="sec ago"] - The label for seconds.
-   * @param {string} [lang.minutes="minutes ago"] - The label for minutes.
-   * @param {string} [lang.hours="hours ago"] - The label for hours.
-   * @param {string} [lang.days="days ago"] - The label for days.
-   * @param {string} [lang.months="months ago"] - The label for months.
-   * @param {string} [lang.years="years ago"] - The label for years.
-   * @returns {string} The time ago in a human-readable format.
+   * Convert a timestamp into a relative time string (e.g., "5 minutes ago")
+   * @param {string|Date} timestamp - The timestamp to convert
+   * @param {Object} [options={}] - Configuration options
+   * @param {string} [options.format] - The expected date format
+   * @param {Object} [options.labels] - Custom labels for time units
+   * @returns {string} - Formatted relative time string
    */
   static moment(timestamp, options = {}) {
     const now = new Date();
@@ -58,72 +73,64 @@ class TickAgo {
     const { sec = "sec ago", minutes = "minutes ago", hours = "hours ago", days = "days ago", months = "months ago", years = "years ago" } = labels;
 
     const timeUnits = [
-      { limit: this.SECOND_IN_SECONDS, value: elapsed, unit: sec },
-      { limit: this.HOUR_IN_SECONDS, value: Math.floor(elapsed / this.SECOND_IN_SECONDS), unit: minutes },
+      { limit: this.MINUTE_IN_SECONDS, value: elapsed, unit: sec },
+      { limit: this.HOUR_IN_SECONDS, value: Math.floor(elapsed / this.MINUTE_IN_SECONDS), unit: minutes },
       { limit: this.DAY_IN_SECONDS, value: Math.floor(elapsed / this.HOUR_IN_SECONDS), unit: hours },
-      { limit: this.MONTH_IN_SECONDS, value: Math.floor(elapsed / this.DAY_IN_SECONDS), unit: days },
-      { limit: this.YEAR_IN_SECONDS, value: Math.floor(elapsed / this.MONTH_IN_SECONDS), unit: months },
+      { limit: this.MONTH_IN_SECONDS(past), value: Math.floor(elapsed / this.DAY_IN_SECONDS), unit: days },
+      { limit: this.YEAR_IN_SECONDS(past), value: Math.floor(elapsed / this.MONTH_IN_SECONDS(past)), unit: months },
     ];
 
     for (const { limit, value, unit } of timeUnits) {
       if (elapsed < limit) return `${value} ${unit}`;
     }
 
-    return `${Math.floor(elapsed / this.YEAR_IN_SECONDS)} ${years}`;
+    return `${Math.floor(elapsed / this.YEAR_IN_SECONDS(past))} ${years}`;
   }
 
   /**
-   * Compares two dates and returns the time difference between them.
-   * @param {string|number} dateOne - The first date to compare.
-   * @param {string|number} dateTwo - The second date to compare.
-   * @returns {Object} An object containing the time difference: years, months, days, hours, minutes, seconds, and elapsedTime in milliseconds.
+   * Compare two dates and return the difference in multiple units
+   * @param {string|Date} dateOne - First date
+   * @param {string|Date} dateTwo - Second date
+   * @param {string} [format] - The expected date format
+   * @returns {Object} - Object containing the time difference in various units
    */
   static compare(dateOne, dateTwo, format) {
     const startDate = this.parseDate(dateOne, format);
     const endDate = this.parseDate(dateTwo, format);
 
-    let years = endDate.getFullYear() - startDate.getFullYear();
-    let months = endDate.getMonth() - startDate.getMonth();
-    let days = endDate.getDate() - startDate.getDate();
+    const elapsedTimeMs = Math.abs(endDate - startDate);
+    const elapsedTime = elapsedTimeMs / this.MILLISECONDS_IN_SECOND;
 
-    const elapsedTime = endDate - startDate;
-    const totalDays = Math.floor(elapsedTime / this.MILLISECONDS_IN_DAY);
+    const years = Math.floor(elapsedTime / this.YEAR_IN_SECONDS(startDate));
+    const remainingTimeAfterYears = elapsedTime % this.YEAR_IN_SECONDS(startDate);
 
-    if (days < 0) {
-      months--;
-      const daysInPreviousMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 0).getDate();
-      days += daysInPreviousMonth;
+    const months = Math.floor(remainingTimeAfterYears / this.MONTH_IN_SECONDS(startDate));
+    const remainingTimeAfterMonths = remainingTimeAfterYears % this.MONTH_IN_SECONDS(startDate);
 
-      if (days < 0) days = 0;
-    }
+    const days = Math.floor(remainingTimeAfterMonths / this.DAY_IN_SECONDS);
+    const remainingTimeAfterDays = remainingTimeAfterMonths % this.DAY_IN_SECONDS;
 
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
+    const hours = Math.floor(remainingTimeAfterDays / this.HOUR_IN_SECONDS);
+    const remainingTimeAfterHours = remainingTimeAfterDays % this.HOUR_IN_SECONDS;
 
-    const hours = Math.floor((elapsedTime % this.MILLISECONDS_IN_DAY) / this.MILLISECONDS_IN_HOUR);
-    const minutes = Math.floor((elapsedTime % this.MILLISECONDS_IN_HOUR) / this.MILLISECONDS_IN_MINUTE);
-    const seconds = Math.floor((elapsedTime % this.MILLISECONDS_IN_MINUTE) / this.MILLISECONDS_IN_SECOND);
-
-    if (totalDays < days) {
-      days = totalDays;
-    }
+    const minutes = Math.floor(remainingTimeAfterHours / this.MINUTE_IN_SECONDS);
+    const seconds = Math.floor(remainingTimeAfterHours % this.MINUTE_IN_SECONDS);
 
     const raw = {
-      seconds: Math.floor(elapsedTime / this.MILLISECONDS_IN_SECOND),
-      minutes: Math.floor(elapsedTime / this.MILLISECONDS_IN_MINUTE),
-      hours: Math.floor(elapsedTime / this.MILLISECONDS_IN_HOUR),
-      days: totalDays,
+      seconds: Math.floor(elapsedTime),
+      minutes: Math.floor(elapsedTime / this.MINUTE_IN_SECONDS),
+      hours: Math.floor(elapsedTime / this.HOUR_IN_SECONDS),
+      days: Math.floor(elapsedTime / this.DAY_IN_SECONDS),
       months: years * 12 + months,
     };
 
-    return { years, months, days, hours, minutes, seconds, elapsedTime, raw };
+    return { years, months, days, hours, minutes, seconds, elapsedTime: elapsedTimeMs, raw };
   }
 }
 
+// Export for Node.js or attach to the window object in browsers
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = TickAgo; // Node.js
+  module.exports = TickAgo;
 } else {
-  window.TickAgo = TickAgo; // Browser
+  window.TickAgo = TickAgo;
 }
