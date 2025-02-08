@@ -8,14 +8,26 @@ class TickAgo {
   static MILLISECONDS_IN_HOUR = 1000 * 60 * 60;
   static MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
 
+  static cache = new Map();
+
   static MONTH_IN_SECONDS(date = new Date()) {
+    const key = `month-${date.getFullYear()}-${date.getMonth()}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+
     const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    return daysInMonth * this.DAY_IN_SECONDS;
+    const seconds = daysInMonth * this.DAY_IN_SECONDS;
+    this.cache.set(key, seconds);
+    return seconds;
   }
 
   static YEAR_IN_SECONDS(date = new Date()) {
+    const key = `year-${date.getFullYear()}`;
+    if (this.cache.has(key)) return this.cache.get(key);
+
     const isLeapYear = (date.getFullYear() % 4 === 0 && date.getFullYear() % 100 !== 0) || date.getFullYear() % 400 === 0;
-    return (isLeapYear ? 366 : 365) * this.DAY_IN_SECONDS;
+    const seconds = (isLeapYear ? 366 : 365) * this.DAY_IN_SECONDS;
+    this.cache.set(key, seconds);
+    return seconds;
   }
 
   static parseDate(input, format) {
