@@ -1,13 +1,9 @@
 class TickAgo {
   /** Time constants in seconds and milliseconds */
-  static SECOND_IN_SECONDS = 1;
   static MINUTE_IN_SECONDS = 60;
   static HOUR_IN_SECONDS = 3600;
   static DAY_IN_SECONDS = 86400;
   static MILLISECONDS_IN_SECOND = 1000;
-  static MILLISECONDS_IN_MINUTE = 1000 * 60;
-  static MILLISECONDS_IN_HOUR = 1000 * 60 * 60;
-  static MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
 
   /** Cache for storing previously computed values */
   static cache = new Map();
@@ -80,7 +76,7 @@ class TickAgo {
   static moment(timestamp, options = {}) {
     const now = new Date();
     const past = this.parseDate(timestamp, options.format);
-    const elapsed = Math.floor((now - past) / 1000);
+    const elapsed = Math.floor((now - past) / this.MILLISECONDS_IN_SECOND);
 
     const labels = options.labels ?? {};
     const { sec = "sec ago", minutes = "minutes ago", hours = "hours ago", days = "days ago", months = "months ago", years = "years ago" } = labels;
@@ -114,10 +110,10 @@ class TickAgo {
     const elapsedTimeMs = Math.abs(endDate - startDate);
     const elapsedTime = elapsedTimeMs / this.MILLISECONDS_IN_SECOND;
 
-    const years = Math.floor(elapsedTime / this.YEAR_IN_SECONDS(startDate));
+    let years = Math.floor(elapsedTime / this.YEAR_IN_SECONDS(startDate));
     const remainingTimeAfterYears = elapsedTime % this.YEAR_IN_SECONDS(startDate);
 
-    const months = Math.floor(remainingTimeAfterYears / this.MONTH_IN_SECONDS(startDate));
+    let months = Math.floor(remainingTimeAfterYears / this.MONTH_IN_SECONDS(startDate));
     const remainingTimeAfterMonths = remainingTimeAfterYears % this.MONTH_IN_SECONDS(startDate);
 
     const days = Math.floor(remainingTimeAfterMonths / this.DAY_IN_SECONDS);
@@ -128,6 +124,11 @@ class TickAgo {
 
     const minutes = Math.floor(remainingTimeAfterHours / this.MINUTE_IN_SECONDS);
     const seconds = Math.floor(remainingTimeAfterHours % this.MINUTE_IN_SECONDS);
+
+    if (months >= 12) {
+      years += Math.floor(months / 12);
+      months = months % 12;
+    }
 
     const raw = {
       seconds: Math.floor(elapsedTime),
