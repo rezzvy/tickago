@@ -21,7 +21,19 @@ It works by getting the given date and calculating the elapsed time.
 <script src="https://cdn.jsdelivr.net/gh/rezzvy/tickago@latest/dist/tickago.min.js"></script>
 ```
 
-2. Assuming you're in a browser environment, you can use the library by calling the method directly `TickAgo.{methodName}`. In a Node environment, you need to require it first.
+_or if you're in node environment_
+
+```
+npm install tickago
+```
+
+2. Assuming you're in a browser environment, you can use the library by calling the method directly `TickAgo.{methodName}`
+
+_or if you're in node environment, you need to require it first._
+
+```javascript
+const TickAgo = require("tickago");
+```
 
 ## Usage
 

@@ -1,0 +1,25 @@
+{
+  "name": "tickago",
+  "version": "1.0.0",
+  "description": "JavaScript library to calculate and compare elapsed time",
+  "main": "dist/tickago.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rezzvy/tickago.git"
+  },
+  "keywords": [
+    "time",
+    "elapsed-time",
+    "time-calculation",
+    "day-counter"
+  ],
+  "author": "Rezzvy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rezzvy/tickago/issues"
+  },
+  "homepage": "https://github.com/rezzvy/tickago#readme"
+}
